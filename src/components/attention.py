@@ -51,10 +51,7 @@ class Attention(nn.Module):
 
 
 
-
-
-model = Attention(8192, 256)
-
-
-total_params = sum(p.numel() for p in model.parameters())
-print(f"Total parameters: {total_params:,}")
+if __name__ == '__main__':
+    model = Attention(8192, 256)
+    total_params = sum(p.numel() for p in model.parameters())
+    print(f"Total parameters: {total_params:,}")
