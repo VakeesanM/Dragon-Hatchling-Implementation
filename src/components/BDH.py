@@ -16,9 +16,11 @@ class BDH(nn.Module):
         self.fc = nn.Sequential(
             nn.Linear(d, d//2),
             nn.Dropout(0.3),
-            nn.LayerNorm(d//2, vocab_size)
+            nn.LayerNorm(d//2),
+            nn.Linear(d//2, vocab_size)
         )
-        self.softmax = nn.Softmax(dim=-1)
+        self.tbptt_steps = 16
+        
     def forward(self, X):
         B, T = X.shape
         val = self.ln(self.embedding(X))
@@ -35,7 +37,12 @@ class BDH(nn.Module):
                     val, neuron_activity, attention_states[l]
                 )
 
-            outputs.append(self.fc(val))                          
+            outputs.append(self.fc(val))       
 
-        probs = self.softmax(torch.stack(outputs, dim=1))
-        return torch.argmax(probs)                         
+            if (self.tbptt_steps is not None and (t + 1) % self.tbptt_steps == 0):
+                attention_states = [
+                    state.detach() for state in attention_states
+                ]                   
+
+        
+        return torch.stack(outputs, dim=1)                       
