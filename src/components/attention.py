@@ -12,18 +12,17 @@ class Attention(nn.Module):
         self.ln1 = nn.LayerNorm(d)
         self.ln2 = nn.LayerNorm(d)
         self.ReLU = nn.ReLU()
-        self.theta = torch.tensor(float(theta))
+        theta = torch.tensor(float(theta))
+        self.c = torch.cos(theta)
+        self.s = torch.sin(theta)
 
     def apply_rotation(self, state, theta):
         
         even = state[..., :, 0::2]
         odd  = state[..., :, 1::2]
 
-        c = torch.cos(theta)
-        s = torch.sin(theta)
-
-        rotated_even = even * c + odd * s
-        rotated_odd  = -even * s + odd * c
+        rotated_even = even * self.c + odd * self.s
+        rotated_odd  = -even * self.s + odd * self.c
 
         rotated = torch.empty_like(state)
         rotated[..., 0::2] = rotated_even
@@ -37,7 +36,7 @@ class Attention(nn.Module):
         neuron_activity =  prev_neuron_activity + self.ReLU(self.D_x(prev_val))
 
         attention_state = prev_state + (prev_val[:, :, None] * neuron_activity[:, None,  :])
-        attention_state = self.apply_rotation(attention_state, self.theta)
+        attention_state = self.apply_rotation(attention_state)
 
         reterived_val = torch.einsum("bdn,bn->bd", prev_state, neuron_activity)
 
